@@ -1,0 +1,38 @@
+[
+  {
+    "id": "usr_1789212162862_737lq",
+    "email": "ibnu.92sholihin@gmail.com",
+    "name": "Ibnu Sholihin",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Ibnu%20Sholihin&backgroundColor=4f46e5&textColor=ffffff",
+    "provider": "google",
+    "createdAt": "2026-09-12T11:22:42.862Z",
+    "lastLogin": "2026-09-12T13:57:10.518Z"
+  },
+  {
+    "id": "test@example.com",
+    "email": "test@example.com",
+    "name": "Test User",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Test%20User&backgroundColor=4f46e5&textColor=ffffff",
+    "provider": "email_otp",
+    "createdAt": "2026-09-12T13:38:35.466Z",
+    "lastLogin": "2026-09-12T14:11:16.816Z"
+  },
+  {
+    "id": "ojiiirizal@gmail.com",
+    "email": "ojiiirizal@gmail.com",
+    "name": "Ojii Rizal",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Ojii%20Rizal&backgroundColor=0284c7&textColor=ffffff",
+    "provider": "email_otp",
+    "createdAt": "2026-09-12T13:39:33.563Z",
+    "lastLogin": "2026-09-13T12:00:21.554Z"
+  },
+  {
+    "id": "badrutammam07@gmail.com",
+    "email": "badrutammam07@gmail.com",
+    "name": "Badrutammam07",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=badrutammam07%40gmail.com&backgroundColor=4f46e5&textColor=ffffff",
+    "provider": "email_otp",
+    "createdAt": "2026-09-13T11:41:55.869Z",
+    "lastLogin": "2026-09-13T11:43:09.850Z"
+  }
+]
