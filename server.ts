@@ -48,7 +48,13 @@ function saveAppConfig(configData: any): boolean {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(configData, null, 2), "utf-8");
+    const existing = getSavedAppConfig() || {};
+    const merged = {
+      ...existing,
+      ...configData,
+      updatedAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(merged, null, 2), "utf-8");
     return true;
   } catch (err) {
     console.error("Could not write app-config.json:", err);
@@ -67,7 +73,39 @@ app.post("/api/app-config", (req, res) => {
     return res.status(400).json({ error: "Missing config object" });
   }
   const ok = saveAppConfig(config);
-  res.json({ success: ok });
+  res.json({ success: ok, config: getSavedAppConfig() });
+});
+
+// Dedicated endpoint to guarantee logo changes are permanently stored on server
+app.post("/api/admin/save-logo", (req, res) => {
+  const {
+    loginLogoUrl,
+    loginLogoType,
+    loginLogoSize,
+    navbarLogoSize,
+    logoUrl,
+    logoType,
+    logoFit,
+    logoBorderRadius,
+    logoShadowEffect,
+  } = req.body || {};
+
+  const logoPayload: Record<string, any> = {
+    logoPermanentTimestamp: new Date().toISOString(),
+  };
+
+  if (loginLogoUrl !== undefined) logoPayload.loginLogoUrl = loginLogoUrl;
+  if (loginLogoType !== undefined) logoPayload.loginLogoType = loginLogoType;
+  if (loginLogoSize !== undefined) logoPayload.loginLogoSize = loginLogoSize;
+  if (navbarLogoSize !== undefined) logoPayload.navbarLogoSize = navbarLogoSize;
+  if (logoUrl !== undefined) logoPayload.logoUrl = logoUrl;
+  if (logoType !== undefined) logoPayload.logoType = logoType;
+  if (logoFit !== undefined) logoPayload.logoFit = logoFit;
+  if (logoBorderRadius !== undefined) logoPayload.logoBorderRadius = logoBorderRadius;
+  if (logoShadowEffect !== undefined) logoPayload.logoShadowEffect = logoShadowEffect;
+
+  const ok = saveAppConfig(logoPayload);
+  res.json({ success: ok, config: getSavedAppConfig() });
 });
 
 // Direct Aliases for /api/send-otp and /api/verify-otp for maximum compatibility

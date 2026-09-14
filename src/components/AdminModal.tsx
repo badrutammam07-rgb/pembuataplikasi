@@ -62,13 +62,25 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const startOffsetPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const handleSave = () => {
+    const updatedData: AppConfig = {
+      ...formData,
+      logoPermanentTimestamp: new Date().toISOString(),
+    };
     try {
-      if (formData.permanentFooterText) {
-        localStorage.setItem("ghighais_permanent_footer_text", formData.permanentFooterText.trim());
+      if (updatedData.permanentFooterText) {
+        localStorage.setItem("ghighais_permanent_footer_text", updatedData.permanentFooterText.trim());
       }
     } catch {}
-    onSaveConfig(formData);
+    onSaveConfig(updatedData);
     setSavedToast(true);
+
+    // Direct server call to ensure persistence on disk
+    fetch("/api/app-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: updatedData }),
+    }).catch(console.warn);
+
     setTimeout(() => {
       setSavedToast(false);
       onClose();

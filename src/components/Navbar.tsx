@@ -132,6 +132,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     const transformStyle = `translate(${config.logoOffsetX || 0}px, ${config.logoOffsetY || 0}px) scale(${config.logoScale || 1}) rotate(${config.logoRotate || 0}deg)`;
 
+    const shadowFilter =
+      config.logoShadowEffect === "none"
+        ? "none"
+        : config.logoShadowEffect === "soft"
+        ? "drop-shadow(0 2px 6px rgba(0,0,0,0.3))"
+        : config.logoShadowEffect === "glow"
+        ? "drop-shadow(0 0 12px rgba(99,102,241,0.5))"
+        : "drop-shadow(0 4px 10px rgba(0,0,0,0.45))";
+
     const effectiveLogoSrc = config.logoUrl || config.loginLogoUrl || "/ghighais-logo.jpg";
 
     if (config.logoType === "url" || config.logoType === "upload" || (!config.logoPreset && effectiveLogoSrc)) {
@@ -139,8 +148,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <img
           src={effectiveLogoSrc}
           alt="App Logo"
-          className="w-full h-full object-contain drop-shadow-md select-none"
-          style={{ transform: transformStyle }}
+          className="w-full h-full object-contain select-none"
+          style={{ transform: transformStyle, filter: shadowFilter }}
           referrerPolicy="no-referrer"
           crossOrigin="anonymous"
           onError={(e) => {
@@ -346,39 +355,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* User Profile & Logout Button (Email Auth Session) */}
+            {/* User Profile & Logout Button (Device Session) */}
             {user && (
               <div className="shrink-0 flex items-center gap-2 pl-1 border-l border-slate-800">
                 <div
-                  className="shrink-0 whitespace-nowrap flex items-center gap-1.5 py-1 px-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs"
-                  title={`Masuk sebagai: ${user.name} (${user.email})`}
+                  className="shrink-0 whitespace-nowrap flex items-center gap-1.5 py-1 px-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs shadow-sm"
+                  title="Sesi Aktif di Perangkat Ini — Pekerjaan otomatis tersimpan"
                 >
                   <img
-                    src={user.avatar}
-                    alt={user.name}
+                    src={user.avatar || "/ghighais-logo.jpg"}
+                    alt={user.name || "Pengguna"}
                     className="w-5 h-5 rounded-full object-cover border border-indigo-400/30 shrink-0"
                   />
                   <span className="text-slate-300 font-medium max-w-[120px] truncate">
-                    {user.name.split(" ")[0]}
+                    {user.name ? user.name.split(" ")[0] : "Studio"}
                   </span>
+                  <span
+                    className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ring-2 ring-emerald-500/20 animate-pulse"
+                    title="Penyimpanan Perangkat Aktif"
+                  />
                 </div>
-
-                <button
-                  id="btn-navbar-switch-account"
-                  type="button"
-                  onClick={() => {
-                    if (onOpenLogoutModal) {
-                      onOpenLogoutModal();
-                    } else {
-                      logoutUser();
-                    }
-                  }}
-                  className="shrink-0 whitespace-nowrap flex items-center gap-1 p-1.5 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors text-xs font-medium cursor-pointer"
-                  title="Ganti Email / Akun"
-                >
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-indigo-400" />
-                  <span className="text-[11px]">Ganti Akun</span>
-                </button>
 
                 <button
                   id="btn-user-logout"
@@ -390,11 +386,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       logoutUser();
                     }
                   }}
-                  className="shrink-0 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl bg-slate-800/80 hover:bg-rose-950/40 hover:border-rose-500/30 border border-transparent text-slate-400 hover:text-rose-300 transition-all cursor-pointer"
-                  title="Keluar (Smart Logout / Hard Reset)"
+                  className="shrink-0 flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-800/80 hover:bg-rose-950/40 hover:border-rose-500/30 border border-slate-700/80 text-slate-300 hover:text-rose-200 transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Keluar dari Studio (Pekerjaan otomatis tersimpan di perangkat ini)"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                  <span className="text-[11px] font-medium text-slate-300 hover:text-rose-200">Keluar</span>
+                  <span className="text-xs font-semibold">Keluar</span>
                 </button>
               </div>
             )}

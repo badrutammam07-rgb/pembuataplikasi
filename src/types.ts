@@ -16,6 +16,8 @@ export interface AppConfig {
   permanentFooterText?: string;
   loginLogoUrl?: string;
   loginLogoType?: "default" | "url" | "upload";
+  logoShadowEffect?: "none" | "soft" | "medium" | "glow";
+  logoPermanentTimestamp?: string;
   customTexts: Record<string, string>;
   qwenModel: string;
   qwenApiKey?: string;

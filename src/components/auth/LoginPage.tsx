@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { AppConfig } from "../../types";
 import {
@@ -33,14 +33,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
   const [adminError, setAdminError] = useState<string | null>(null);
 
   // Active logo for login page with dynamic size and styling configured by admin
-  const loginLogoSrc = config.loginLogoUrl || config.logoUrl || "/ghighais-logo.jpg";
-  const loginLogoSize = config.loginLogoSize || config.logoSize || 96;
+  const [activeConfig, setActiveConfig] = useState<AppConfig>(() => {
+    try {
+      const saved = localStorage.getItem("ghighais_app_config");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...config, ...parsed };
+      }
+    } catch {}
+    return config;
+  });
+
+  useEffect(() => {
+    setActiveConfig(config);
+  }, [config]);
+
+  // Fetch /api/app-config if not yet set to guarantee latest server branding
+  useEffect(() => {
+    fetch("/api/app-config")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.config) {
+          setActiveConfig((prev) => ({ ...prev, ...data.config }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const effectiveConfig = activeConfig || config;
+  const loginLogoSrc = effectiveConfig.loginLogoUrl || effectiveConfig.logoUrl || "/ghighais-logo.jpg";
+  const loginLogoSize = effectiveConfig.loginLogoSize || effectiveConfig.logoSize || 96;
   const objectFit =
-    config.logoFit === "cover"
+    effectiveConfig.logoFit === "cover"
       ? "object-cover"
-      : config.logoFit === "fill"
+      : effectiveConfig.logoFit === "fill"
       ? "object-fill"
       : "object-contain";
+
+  const shadowFilter =
+    effectiveConfig.logoShadowEffect === "none"
+      ? "none"
+      : effectiveConfig.logoShadowEffect === "soft"
+      ? "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))"
+      : effectiveConfig.logoShadowEffect === "glow"
+      ? "drop-shadow(0 0 20px rgba(99, 102, 241, 0.45))"
+      : "drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45))";
 
   const borderRadiusStyle =
     config.logoBorderRadius === "none"
@@ -135,8 +172,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
               maxWidth: "100%",
               height: "auto",
               maxHeight: `${Math.max(loginLogoSize * 1.5, 400)}px`,
-              objectFit: "contain",
-              filter: "drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45))",
+              objectFit: objectFit as any,
+              filter: shadowFilter,
             }}
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"

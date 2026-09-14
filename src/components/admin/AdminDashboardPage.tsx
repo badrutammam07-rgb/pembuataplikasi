@@ -130,17 +130,55 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   };
 
   const handleResetLoginLogo = () => {
-    setLoginLogoUrl("/ghighais-logo.jpg");
-    setLoginLogoType("default");
-    setLoginLogoSize(96);
-    setNavbarLogoSize(40);
-    setLogoFit("contain");
-    setLogoBorderRadius("3xl");
-    setLogoError(null);
+    if (window.confirm("Apakah Anda yakin ingin mengembalikan logo ke default (/ghighais-logo.jpg)?")) {
+      const defaultLogo = "/ghighais-logo.jpg";
+      setLoginLogoUrl(defaultLogo);
+      setLoginLogoType("default");
+      setLoginLogoSize(96);
+      setNavbarLogoSize(40);
+      setLogoFit("contain");
+      setLogoBorderRadius("3xl");
+      setLogoShadowDepth("medium");
+      setLogoError(null);
+
+      const nowIso = new Date().toISOString();
+      const updated: AppConfig = {
+        ...config,
+        loginLogoUrl: defaultLogo,
+        loginLogoType: "default",
+        loginLogoSize: 96,
+        navbarLogoSize: 40,
+        logoFit: "contain",
+        logoBorderRadius: "3xl",
+        logoShadowEffect: "medium",
+        logoPermanentTimestamp: nowIso,
+        ...(syncGlobal ? { logoUrl: defaultLogo, logoType: "preset" } : {}),
+      };
+      onSaveConfig(updated);
+      setLogoSaveToast(true);
+      setTimeout(() => setLogoSaveToast(false), 3500);
+
+      fetch("/api/admin/save-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loginLogoUrl: defaultLogo,
+          loginLogoType: "default",
+          loginLogoSize: 96,
+          navbarLogoSize: 40,
+          logoUrl: syncGlobal ? defaultLogo : config.logoUrl,
+          logoType: syncGlobal ? "preset" : config.logoType,
+          logoFit: "contain",
+          logoBorderRadius: "3xl",
+          logoShadowEffect: "medium",
+        }),
+      }).catch(console.warn);
+    }
   };
 
-  const handleSaveLoginLogo = () => {
+  const handleSaveLoginLogo = async () => {
     const finalLogoUrl = loginLogoUrl.trim() || "/ghighais-logo.jpg";
+    const nowIso = new Date().toISOString();
     const updated: AppConfig = {
       ...config,
       loginLogoUrl: finalLogoUrl,
@@ -149,6 +187,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       navbarLogoSize,
       logoFit,
       logoBorderRadius,
+      logoShadowEffect: logoShadowDepth,
+      logoPermanentTimestamp: nowIso,
       ...(syncGlobal
         ? {
             logoUrl: finalLogoUrl,
@@ -158,7 +198,34 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     };
     onSaveConfig(updated);
     setLogoSaveToast(true);
-    setTimeout(() => setLogoSaveToast(false), 3500);
+    setTimeout(() => setLogoSaveToast(false), 4000);
+
+    // Direct server call to /api/admin/save-logo to guarantee server-side persistence
+    try {
+      await fetch("/api/admin/save-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loginLogoUrl: finalLogoUrl,
+          loginLogoType,
+          loginLogoSize,
+          navbarLogoSize,
+          logoUrl: syncGlobal ? finalLogoUrl : config.logoUrl,
+          logoType: syncGlobal
+            ? loginLogoType === "upload"
+              ? "upload"
+              : loginLogoType === "url"
+              ? "url"
+              : "upload"
+            : config.logoType,
+          logoFit,
+          logoBorderRadius,
+          logoShadowEffect: logoShadowDepth,
+        }),
+      });
+    } catch (err) {
+      console.warn("Direct server logo save error:", err);
+    }
   };
 
   return (

@@ -37,6 +37,8 @@ import {
   saveUserDraft,
   deleteUserDraft,
   formatDraftTime,
+  getDeviceProject,
+  saveDeviceProject,
 } from "./services/draftStorage";
 import {
   MessageSquare,
@@ -91,6 +93,22 @@ function AppContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ config: newConfig }),
+      });
+      // Also trigger dedicated logo save endpoint
+      await fetch("/api/admin/save-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loginLogoUrl: newConfig.loginLogoUrl,
+          loginLogoType: newConfig.loginLogoType,
+          loginLogoSize: newConfig.loginLogoSize,
+          navbarLogoSize: newConfig.navbarLogoSize,
+          logoUrl: newConfig.logoUrl,
+          logoType: newConfig.logoType,
+          logoFit: newConfig.logoFit,
+          logoBorderRadius: newConfig.logoBorderRadius,
+          logoShadowEffect: newConfig.logoShadowEffect,
+        }),
       });
     } catch (err) {
       console.warn("Server config save error:", err);
@@ -211,29 +229,43 @@ function AppContent() {
 
   const initialUserLoadedRef = useRef<string | null>(null);
 
-  // Fitur "Masuk Lagi" (Quick Resume):
-  // Saat user baru login (atau login ulang setelah logout), sistem otomatis mengecek apakah ada data draft di localStorage untuk UID tersebut.
-  // Jika ada, muat data tersebut kembali ke editor/dashboard secara otomatis.
-  // Jika tidak ada, tampilkan dashboard kosong/default.
+  // Fitur Pemulihan Proyek di Perangkat (Device Persistence & Quick Resume):
+  // Saat user membuka aplikasi atau masuk lagi, sistem otomatis mengecek apakah ada project tersimpan di perangkat ini.
+  // Data kode, riwayat chat, dan konfigurasi langsung dipulihkan secara otomatis agar pekerjaan terakhir tidak hilang.
   useEffect(() => {
     if (user && user.id) {
       if (initialUserLoadedRef.current !== user.id) {
         initialUserLoadedRef.current = user.id;
-        const draft = getUserDraft(user);
-        if (draft && draft.code) {
-          setCode(ensurePermanentFooter(draft.code));
-          if (Array.isArray(draft.messages) && draft.messages.length > 0) {
-            setMessages(draft.messages);
+        const project = getDeviceProject() || getUserDraft(user);
+        if (project && project.code) {
+          setCode(ensurePermanentFooter(project.code));
+          if (Array.isArray(project.messages) && project.messages.length > 0) {
+            setMessages(project.messages);
           }
-          if (draft.config) {
-            setConfig((prev) => ({ ...prev, ...draft.config }));
+          if (project.config) {
+            setConfig((prev) => ({
+              ...prev,
+              ...project.config,
+              // Admin logo & branding MUST remain permanent and cannot be overwritten by project drafts
+              loginLogoUrl: prev.loginLogoUrl,
+              loginLogoType: prev.loginLogoType,
+              loginLogoSize: prev.loginLogoSize,
+              navbarLogoSize: prev.navbarLogoSize,
+              logoUrl: prev.logoUrl,
+              logoType: prev.logoType,
+              logoFit: prev.logoFit,
+              logoBorderRadius: prev.logoBorderRadius,
+              logoShadowEffect: prev.logoShadowEffect,
+              permanentFooterText: prev.permanentFooterText,
+              logoPermanentTimestamp: prev.logoPermanentTimestamp,
+            }));
           }
-          if (draft.databasePreference) {
-            setDatabasePreference(draft.databasePreference);
+          if (project.databasePreference) {
+            setDatabasePreference(project.databasePreference);
           }
           setQuickResumeNotification({
             show: true,
-            timestamp: formatDraftTime(draft.updatedAt || draft.savedAt),
+            timestamp: formatDraftTime(project.updatedAt || project.savedAt),
           });
         }
       }
@@ -242,15 +274,23 @@ function AppContent() {
     }
   }, [user]);
 
-  // Simpan data pekerjaan terakhir di localStorage dengan key unik per user ID (ghighais_draft_[uid])
+  // Simpan pekerjaan dan project secara berkala di memori perangkat ini (Device Storage)
   useEffect(() => {
-    if (user && user.id) {
-      saveUserDraft(user, {
+    if (code) {
+      saveDeviceProject({
         code,
         messages,
         config,
         databasePreference,
       });
+      if (user && user.id) {
+        saveUserDraft(user, {
+          code,
+          messages,
+          config,
+          databasePreference,
+        });
+      }
     }
   }, [user, code, messages, config, databasePreference]);
 
@@ -790,7 +830,7 @@ function AppContent() {
     try {
       localStorage.removeItem("ghighais_app_code");
       localStorage.removeItem("ghighais_chat_history");
-      localStorage.removeItem("ghighais_app_config");
+      // PERMANENT ADMIN BRANDING: Jangan hapus ghighais_app_config saat reset workspace
       localStorage.removeItem("ghighais_prompt_undo_history");
       if (options?.clearSavedDrafts && user) {
         deleteUserDraft(user);
@@ -828,7 +868,7 @@ function AppContent() {
     setCode(cleanStarter);
     setMessages([]);
     setLayout(DEFAULT_LAYOUT_STATE);
-    setConfig(DEFAULT_APP_CONFIG);
+    // PERMANENT ADMIN LOGO: Tetap pertahankan config branding yang telah diatur oleh admin
     setPreviewError({ hasError: false, message: "" });
     if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     setProgress({
@@ -1002,7 +1042,7 @@ function AppContent() {
               </div>
             )}
 
-            {/* Quick Resume Notification Banner (Fitur "Masuk Lagi") */}
+            {/* Quick Resume Notification Banner (Fitur Pemulihan Perangkat) */}
             {quickResumeNotification?.show && (
               <div
                 id="quick-resume-banner"
@@ -1014,10 +1054,10 @@ function AppContent() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-white truncate">
-                      Pekerjaan Terakhir Berhasil Dimuat Kembali (Quick Resume)
+                      Pekerjaan Terakhir Berhasil Dipulihkan dari Perangkat Ini
                     </p>
                     <p className="text-[11px] text-emerald-300/80 truncate">
-                      Draft kode project dan riwayat percakapan Anda otomatis dipulihkan ({quickResumeNotification.timestamp}).
+                      Kode project dan riwayat percakapan Anda otomatis dipulihkan dari penyimpanan perangkat ({quickResumeNotification.timestamp}).
                     </p>
                   </div>
                 </div>

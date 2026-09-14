@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { UserProfile, AuthState } from "../types";
-import { saveUserDraft, deleteUserDraft } from "../services/draftStorage";
+import { saveUserDraft, deleteUserDraft, saveDeviceProject } from "../services/draftStorage";
 import {
   sendEmailOtp,
   verifyEmailOtp,
@@ -174,42 +174,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // User Logout with Smart Logout & Hard Reset options
   const logoutUser = async (options?: LogoutOptions) => {
     try {
-      if (user) {
-        if (options?.hardReset) {
-          // Hard Reset: Hapus semua draft dan data lokal terkait UID sebelum signOut()
+      if (options?.hardReset) {
+        // Hard Reset: Hapus semua draft dan data lokal terkait UID sebelum signOut()
+        if (user) {
           deleteUserDraft(user);
+        }
+        try {
+          sessionStorage.setItem(
+            "ghighais_logout_toast",
+            "Anda telah keluar dan seluruh data lokal di perangkat ini telah dibersihkan."
+          );
+        } catch {}
+      } else {
+        // Smart Logout: Simpan pekerjaan terakhir di localStorage perangkat
+        const codeToSave =
+          options?.draftData?.code ??
+          (typeof window !== "undefined" ? localStorage.getItem("ghighais_app_code") || "" : "");
+        let messagesToSave = options?.draftData?.messages;
+        if (!messagesToSave && typeof window !== "undefined") {
           try {
-            sessionStorage.setItem(
-              "ghighais_logout_toast",
-              "Anda telah keluar dan seluruh data draft lokal telah dibersihkan secara permanen."
-            );
+            const rawMsg = localStorage.getItem("ghighais_chat_history");
+            if (rawMsg) messagesToSave = JSON.parse(rawMsg);
           } catch {}
-        } else {
-          // Smart Logout: Simpan pekerjaan terakhir di localStorage dengan key [email]_drafts & [email]_projects
-          const codeToSave =
-            options?.draftData?.code ??
-            (typeof window !== "undefined" ? localStorage.getItem("ghighais_app_code") || "" : "");
-          let messagesToSave = options?.draftData?.messages;
-          if (!messagesToSave && typeof window !== "undefined") {
-            try {
-              const rawMsg = localStorage.getItem("ghighais_chat_history");
-              if (rawMsg) messagesToSave = JSON.parse(rawMsg);
-            } catch {}
-          }
+        }
+
+        // Simpan langsung ke device project storage
+        saveDeviceProject({
+          code: codeToSave,
+          messages: messagesToSave || [],
+          config: options?.draftData?.config,
+          databasePreference: options?.draftData?.databasePreference,
+        });
+
+        if (user) {
           saveUserDraft(user, {
             code: codeToSave,
             messages: messagesToSave || [],
             config: options?.draftData?.config,
             databasePreference: options?.draftData?.databasePreference,
           });
-
-          try {
-            sessionStorage.setItem(
-              "ghighais_logout_toast",
-              "Anda telah keluar. Data pekerjaan terakhir tetap tersimpan di perangkat ini."
-            );
-          } catch {}
         }
+
+        try {
+          sessionStorage.setItem(
+            "ghighais_logout_toast",
+            "Anda telah keluar. Proyek dan pekerjaan Anda tersimpan aman di perangkat ini."
+          );
+        } catch {}
       }
 
       await fetch("/api/auth/logout", { method: "POST" });
