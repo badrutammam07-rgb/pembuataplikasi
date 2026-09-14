@@ -200,7 +200,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  avatar: string;
+  avatar?: string;
   provider: "email_otp" | "magic_link" | "captcha_verify" | "robot_verify";
   createdAt: string;
   lastLogin: string;
