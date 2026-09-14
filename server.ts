@@ -27,6 +27,49 @@ app.get("/robots.txt", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/deploy", deployRouter);
 
+// Persistent Global App Configuration Storage (Ensures logo & settings appear on any device/browser)
+const CONFIG_FILE_PATH = path.join(process.cwd(), "data", "app-config.json");
+
+function getSavedAppConfig(): any {
+  try {
+    if (fs.existsSync(CONFIG_FILE_PATH)) {
+      const raw = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn("Could not read app-config.json:", err);
+  }
+  return null;
+}
+
+function saveAppConfig(configData: any): boolean {
+  try {
+    const dir = path.dirname(CONFIG_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(configData, null, 2), "utf-8");
+    return true;
+  } catch (err) {
+    console.error("Could not write app-config.json:", err);
+    return false;
+  }
+}
+
+app.get("/api/app-config", (req, res) => {
+  const config = getSavedAppConfig();
+  res.json({ success: true, config });
+});
+
+app.post("/api/app-config", (req, res) => {
+  const { config } = req.body || {};
+  if (!config) {
+    return res.status(400).json({ error: "Missing config object" });
+  }
+  const ok = saveAppConfig(config);
+  res.json({ success: ok });
+});
+
 // Direct Aliases for /api/send-otp and /api/verify-otp for maximum compatibility
 app.post("/api/send-otp", (req, res, next) => {
   req.url = "/send-otp";

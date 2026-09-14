@@ -32,8 +32,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
   const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
 
-  // Active logo for login page
+  // Active logo for login page with dynamic size and styling configured by admin
   const loginLogoSrc = config.loginLogoUrl || config.logoUrl || "/ghighais-logo.jpg";
+  const loginLogoSize = config.loginLogoSize || config.logoSize || 96;
+  const objectFit =
+    config.logoFit === "cover"
+      ? "object-cover"
+      : config.logoFit === "fill"
+      ? "object-fill"
+      : "object-contain";
+
+  const borderRadiusStyle =
+    config.logoBorderRadius === "none"
+      ? "0px"
+      : config.logoBorderRadius === "md"
+      ? "12px"
+      : config.logoBorderRadius === "xl"
+      ? "18px"
+      : config.logoBorderRadius === "full"
+      ? "9999px"
+      : "24px";
 
   // Klik verifikasi: Langsung ceklis dan langsung buka aplikasi tanpa kode
   const handleCheck = async () => {
@@ -52,7 +70,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
     }, 280);
   };
 
-  // Secret 5-Tap on Logo to open Master Admin Modal (rescue / backup admin login)
+  // Ketuk logo 5x untuk memunculkan Halaman Password Admin
   const handleLogoTap = () => {
     if (logoTapTimerRef.current) clearTimeout(logoTapTimerRef.current);
     const newCount = logoTapCount + 1;
@@ -66,26 +84,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
     } else {
       logoTapTimerRef.current = setTimeout(() => {
         setLogoTapCount(0);
-      }, 2500);
+      }, 3500);
     }
   };
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adminPassword.trim()) {
-      setAdminError("Masukkan Password Master.");
+    const trimmed = adminPassword.trim();
+    if (!trimmed) {
+      setAdminError("Masukkan Password Admin.");
       return;
     }
     setIsAdminSubmitting(true);
     setAdminError(null);
 
-    const res = await loginAdmin(adminPassword, "/dashboard");
+    const res = await loginAdmin(trimmed, "/admin");
     setIsAdminSubmitting(false);
 
     if (res.success) {
       setShowAdminModal(false);
     } else {
-      setAdminError(res.error || "Password Master tidak valid.");
+      setAdminError(res.error || "Password salah. Silakan coba lagi.");
     }
   };
 
@@ -97,24 +116,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
 
       {/* Main Container: HANYA LOGO DAN VERIFIKASI BUKAN ROBOT */}
       <div className="w-full max-w-sm bg-slate-900/90 border border-slate-800/90 rounded-3xl p-8 sm:p-10 shadow-2xl backdrop-blur-xl relative z-10 flex flex-col items-center text-center">
-        {/* LOGO */}
+        {/* LOGO BEBAS TANPA BATAS KOTAK & TANPA DIBERI KOTAK (Ketuk 5x untuk Masuk Halaman Password Admin) */}
         <div
           id="brand-logo-button"
           onClick={handleLogoTap}
-          title="Logo"
-          className="relative cursor-pointer active:scale-95 transition-transform mb-7"
+          title="Ketuk logo 5x untuk Masuk Halaman Admin"
+          className="relative cursor-pointer active:scale-95 transition-transform mb-7 flex items-center justify-center group"
+          style={{
+            maxWidth: "100%",
+          }}
         >
-          <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 bg-slate-800/80 flex items-center justify-center">
-            <img
-              src={loginLogoSrc}
-              alt="Logo"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = "none";
-              }}
-            />
-            <Sparkles className="w-10 h-10 text-indigo-400 fallback-icon" />
-          </div>
+          <img
+            src={loginLogoSrc}
+            alt="Logo Aplikasi"
+            className="transition-all duration-300 select-none pointer-events-auto"
+            style={{
+              width: `${loginLogoSize}px`,
+              maxWidth: "100%",
+              height: "auto",
+              maxHeight: `${Math.max(loginLogoSize * 1.5, 400)}px`,
+              objectFit: "contain",
+              filter: "drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45))",
+            }}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement;
+              if (!img.src.endsWith("/ghighais-logo.jpg")) {
+                img.src = "/ghighais-logo.jpg";
+              }
+            }}
+          />
         </div>
 
         {/* KOTAK VERIFIKASI BUKAN ROBOT: Sekali klik langsung ceklis & langsung kebuka */}
@@ -179,50 +211,52 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
         </div>
       </div>
 
-      {/* MASTER ADMIN MODAL (Tetap tersimpan rahasia via 5-tap pada logo) */}
+      {/* MODAL PASSWORD ADMIN (Muncul ketika diketuk logo 5x) */}
       {showAdminModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <KeyRound className="w-5 h-5 text-amber-400" />
-                <div>
-                  <h3 className="font-semibold text-slate-100 text-sm">Login Password Master</h3>
-                  <p className="text-[11px] text-slate-400">Masuk langsung ke halaman utama</p>
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-slate-100 text-sm">Halaman Password Admin</h3>
+                  <p className="text-[11px] text-slate-400">Masukkan password untuk masuk halaman admin</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowAdminModal(false)}
-                className="text-slate-400 hover:text-slate-200 p-1 rounded-lg cursor-pointer"
+                className="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {adminError && (
-              <div className="mb-4 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-300">
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300">
                 {adminError}
               </div>
             )}
 
             <form onSubmit={handleAdminSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Password Master
+              <div className="text-left">
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  Password Admin
                 </label>
                 <div className="relative">
                   <input
                     type={showAdminPassword ? "text" : "password"}
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="Masukkan password master"
+                    placeholder="Masukkan password admin"
                     autoFocus
-                    className="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowAdminPassword(!showAdminPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer p-1"
                   >
                     {showAdminPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -237,17 +271,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ config }) => {
                 <button
                   type="button"
                   onClick={() => setShowAdminModal(false)}
-                  className="px-3 py-2 text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-slate-200 cursor-pointer rounded-xl hover:bg-slate-800 transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isAdminSubmitting}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-lg shadow-amber-500/20"
                 >
                   {isAdminSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Masuk</span>
+                  <span>Masuk Halaman Admin</span>
                 </button>
               </div>
             </form>

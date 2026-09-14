@@ -17,6 +17,12 @@ import {
   Upload,
   RotateCcw,
   Check,
+  Maximize2,
+  Eye,
+  Globe,
+  Layers,
+  Monitor,
+  ShieldCheck,
 } from "lucide-react";
 
 interface AdminDashboardPageProps {
@@ -41,19 +47,34 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   // Login Logo state (support PNG transparan tanpa background, URL, atau file upload)
   const [loginLogoUrl, setLoginLogoUrl] = useState(config.loginLogoUrl || config.logoUrl || "/ghighais-logo.jpg");
   const [loginLogoType, setLoginLogoType] = useState<"default" | "url" | "upload">(config.loginLogoType || "default");
+  const [loginLogoSize, setLoginLogoSize] = useState<number>(config.loginLogoSize || 96);
+  const [navbarLogoSize, setNavbarLogoSize] = useState<number>(config.navbarLogoSize || 40);
+  const [logoFit, setLogoFit] = useState<"contain" | "cover" | "fill">(config.logoFit || "contain");
+  const [logoBorderRadius, setLogoBorderRadius] = useState<"none" | "md" | "xl" | "3xl" | "full">(config.logoBorderRadius || "3xl");
+  const [syncGlobal, setSyncGlobal] = useState<boolean>(true);
   const [logoSaveToast, setLogoSaveToast] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [previewTab, setPreviewTab] = useState<"login" | "navbar" | "both" | "alpha">("login");
+  const [previewInteractiveCheck, setPreviewInteractiveCheck] = useState(false);
+  const [logoShadowDepth, setLogoShadowDepth] = useState<"none" | "soft" | "medium" | "glow">("medium");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state if external config updates
   useEffect(() => {
-    if (config.loginLogoUrl) {
-      setLoginLogoUrl(config.loginLogoUrl);
-    }
-    if (config.loginLogoType) {
-      setLoginLogoType(config.loginLogoType);
-    }
-  }, [config.loginLogoUrl, config.loginLogoType]);
+    if (config.loginLogoUrl) setLoginLogoUrl(config.loginLogoUrl);
+    if (config.loginLogoType) setLoginLogoType(config.loginLogoType);
+    if (config.loginLogoSize) setLoginLogoSize(config.loginLogoSize);
+    if (config.navbarLogoSize) setNavbarLogoSize(config.navbarLogoSize);
+    if (config.logoFit) setLogoFit(config.logoFit);
+    if (config.logoBorderRadius) setLogoBorderRadius(config.logoBorderRadius);
+  }, [
+    config.loginLogoUrl,
+    config.loginLogoType,
+    config.loginLogoSize,
+    config.navbarLogoSize,
+    config.logoFit,
+    config.logoBorderRadius,
+  ]);
 
   // Load audit trail from server
   const fetchAuditLogs = async () => {
@@ -111,14 +132,29 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   const handleResetLoginLogo = () => {
     setLoginLogoUrl("/ghighais-logo.jpg");
     setLoginLogoType("default");
+    setLoginLogoSize(96);
+    setNavbarLogoSize(40);
+    setLogoFit("contain");
+    setLogoBorderRadius("3xl");
     setLogoError(null);
   };
 
   const handleSaveLoginLogo = () => {
+    const finalLogoUrl = loginLogoUrl.trim() || "/ghighais-logo.jpg";
     const updated: AppConfig = {
       ...config,
-      loginLogoUrl: loginLogoUrl.trim() || "/ghighais-logo.jpg",
+      loginLogoUrl: finalLogoUrl,
       loginLogoType,
+      loginLogoSize,
+      navbarLogoSize,
+      logoFit,
+      logoBorderRadius,
+      ...(syncGlobal
+        ? {
+            logoUrl: finalLogoUrl,
+            logoType: loginLogoType === "upload" ? "upload" : loginLogoType === "url" ? "url" : "upload",
+          }
+        : {}),
     };
     onSaveConfig(updated);
     setLogoSaveToast(true);
@@ -308,21 +344,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
               </div>
             </div>
 
-            {/* Customizer Logo Halaman Login (Support PNG Tanpa Background) */}
+            {/* Customizer Logo & Ukuran Tampilan (Menyesuaikan Keinginan Admin & Selalu Muncul Dimanapun) */}
             <div className="lg:col-span-3 bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5 sm:p-6 flex flex-col gap-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                     <Image className="w-4 h-4 text-indigo-400" />
-                    <span>Kustomisasi Logo Halaman Login</span>
+                    <span>Kustomisasi & Ukuran Tampilan Logo Aplikasi</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Ganti logo pada halaman login (Sign In with Google). Mendukung format <strong>PNG transparan tanpa background</strong>, WebP, SVG, atau URL eksternal.
+                    Ubah gambar dan ukuran logo sesuai keinginan Anda. Logo dijamin <strong>tetap muncul dimanapun web app ini dibuka</strong> di berbagai perangkat.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold">
-                    PNG Transparent Supported
+                  <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 text-emerald-400" />
+                    <span>Global Sync Active</span>
                   </span>
                 </div>
               </div>
@@ -334,105 +371,483 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Visual Live Previews */}
-                <div className="lg:col-span-5 flex flex-col gap-3">
-                  <span className="text-xs font-semibold text-slate-300">Pratinjau Langsung Logo</span>
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                {/* Visual Live Previews (Kiri: Real-time scaling preview 1:1 tanpa batas kotak) */}
+                <div className="xl:col-span-5 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pratinjau Hasil Nyata Saat Disimpan</span>
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">
+                      Bebas Kotak (Borderless)
+                    </span>
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Preview 1: Simulated Dark Card (As in LoginPage) */}
-                    <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-center">
-                      <span className="text-[10px] font-medium text-slate-400">Mode Tampilan Login</span>
-                      <div className="w-24 h-24 rounded-2xl bg-slate-900/90 border border-slate-800/90 p-2 shadow-xl flex items-center justify-center overflow-hidden">
-                        <img
-                          src={loginLogoUrl || "/ghighais-logo.jpg"}
-                          alt="Preview Login Logo"
-                          className="w-full h-full object-contain drop-shadow-md rounded-lg"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = "/ghighais-logo.jpg";
-                          }}
-                        />
+                  {/* Tabs Selector for Preview Mode */}
+                  <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950/80 border border-slate-800 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("login")}
+                      className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+                        previewTab === "login"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Eye className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Login</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("navbar")}
+                      className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+                        previewTab === "navbar"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Layers className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Navbar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("both")}
+                      className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+                        previewTab === "both"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Monitor className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Keduanya</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("alpha")}
+                      className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+                        previewTab === "alpha"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Sparkles className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Alpha PNG</span>
+                    </button>
+                  </div>
+
+                  {/* PREVIEW CONTAINER */}
+                  {(previewTab === "login" || previewTab === "both") && (
+                    <div className="flex flex-col items-center p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 text-center relative overflow-hidden shadow-inner">
+                      {/* Ambient light simulations */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-28 bg-indigo-600/20 rounded-full blur-2xl pointer-events-none" />
+
+                      <div className="w-full flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80 relative z-10">
+                        <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                          <span>Simulasi Halaman Login</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono font-bold">
+                          {loginLogoSize} px
+                        </span>
                       </div>
-                      <span className="text-[9px] text-slate-500">Latar Belakang Gelap</span>
-                    </div>
 
-                    {/* Preview 2: Checkerboard Transparency Grid (Alpha Test) */}
-                    <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-center">
-                      <span className="text-[10px] font-medium text-slate-400">Uji Transparansi (Alpha)</span>
+                      {/* Exact Simulated Login Card (Tanpa Kotak Batas Logo) */}
+                      <div className="w-full max-w-xs bg-slate-900/90 border border-slate-800/90 rounded-3xl p-5 shadow-2xl backdrop-blur-xl relative z-10 flex flex-col items-center text-center my-2">
+                        {/* THE LOGO: MURNI TANPA BATAS KOTAK & TANPA DIBERI KOTAK */}
+                        <div className="w-full flex items-center justify-center mb-5 group cursor-pointer" title="Pratinjau Logo Tanpa Batas Kotak">
+                          <img
+                            src={loginLogoUrl || "/ghighais-logo.jpg"}
+                            alt="Pratinjau Logo Halaman Login"
+                            style={{
+                              width: `${loginLogoSize}px`,
+                              maxWidth: "100%",
+                              height: "auto",
+                              maxHeight: `${Math.max(loginLogoSize * 1.4, 320)}px`,
+                              objectFit: "contain",
+                              filter:
+                                logoShadowDepth === "none"
+                                  ? "none"
+                                  : logoShadowDepth === "soft"
+                                  ? "drop-shadow(0 4px 10px rgba(0,0,0,0.35))"
+                                  : logoShadowDepth === "glow"
+                                  ? "drop-shadow(0 0 20px rgba(99,102,241,0.65))"
+                                  : "drop-shadow(0 10px 24px rgba(0,0,0,0.45))",
+                            }}
+                            className="transition-all duration-200 select-none pointer-events-none"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/ghighais-logo.jpg";
+                            }}
+                          />
+                        </div>
+
+                        {/* Interactive Captcha Verification simulation box */}
+                        <div
+                          onClick={() => setPreviewInteractiveCheck(!previewInteractiveCheck)}
+                          className={`w-full p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-md select-none ${
+                            previewInteractiveCheck
+                              ? "bg-emerald-950/30 border-emerald-500/60 shadow-emerald-500/10"
+                              : "bg-slate-950/60 border-slate-800 hover:border-slate-700"
+                          }`}
+                          title="Klik untuk tes simulasi verifikasi"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                                previewInteractiveCheck
+                                  ? "bg-emerald-500 border-emerald-400 text-slate-950 shadow-md shadow-emerald-500/30"
+                                  : "border-slate-600 bg-slate-900"
+                              }`}
+                            >
+                              {previewInteractiveCheck && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </div>
+                            <div className="text-left">
+                              <span className="text-[11px] font-semibold text-slate-200 block leading-tight">
+                                Verifikasi Anda Bukan Robot
+                              </span>
+                              <span className="text-[9px] text-slate-500 block leading-tight">
+                                {previewInteractiveCheck ? "Terverifikasi" : "Klik untuk mencoba"}
+                              </span>
+                            </div>
+                          </div>
+                          <ShieldCheck className={`w-4 h-4 ${previewInteractiveCheck ? "text-emerald-400" : "text-slate-600"}`} />
+                        </div>
+
+                        <span className="text-[9px] text-slate-500 mt-4">
+                          Ketuk logo 5x untuk Masuk Halaman Admin
+                        </span>
+                      </div>
+
+                      <div className="w-full pt-2 flex items-center justify-between text-[10px] text-slate-400">
+                        <span className="text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Logo murni tanpa bingkai kotak</span>
+                        </span>
+                        <span className="font-mono text-slate-500">Skala 1:1 Asli</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PREVIEW NAVBAR */}
+                  {(previewTab === "navbar" || previewTab === "both") && (
+                    <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                        <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse" />
+                          <span>Simulasi Header Studio / Navbar</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono font-bold">
+                          {navbarLogoSize} px
+                        </span>
+                      </div>
+
+                      {/* Header Studio Navbar Simulation */}
+                      <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Logo Navbar Tanpa Batas Kotak */}
+                          <div
+                            style={{
+                              width: `${navbarLogoSize}px`,
+                              height: `${navbarLogoSize}px`,
+                            }}
+                            className="flex items-center justify-center shrink-0"
+                          >
+                            <img
+                              src={loginLogoUrl || "/ghighais-logo.jpg"}
+                              alt="Navbar Logo"
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
+                                filter:
+                                  logoShadowDepth === "none"
+                                    ? "none"
+                                    : logoShadowDepth === "soft"
+                                    ? "drop-shadow(0 2px 6px rgba(0,0,0,0.3))"
+                                    : "drop-shadow(0 4px 10px rgba(0,0,0,0.45))",
+                              }}
+                              className="select-none"
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/ghighais-logo.jpg";
+                              }}
+                            />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-white truncate">{config.appTitle || "Ghighais Brain"}</span>
+                            <span className="text-[10px] text-slate-400 truncate">{config.appSubtitle || "AI Web Generator & Studio"}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="px-2 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-semibold">
+                            Simpan
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] text-slate-400 pt-1">
+                        Logo menyatu secara mulus tanpa batas kotak dengan teks judul
+                      </span>
+                    </div>
+                  )}
+
+                  {/* PREVIEW ALPHA CHECKERBOARD */}
+                  {previewTab === "alpha" && (
+                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                        <span className="text-[11px] font-semibold text-slate-300">Papan Catur Transparansi Alpha</span>
+                        <span className="text-[10px] text-emerald-400 font-semibold">Uji Latar Bening</span>
+                      </div>
+
                       <div
-                        className="w-24 h-24 rounded-2xl border border-slate-700/80 p-2 shadow-xl flex items-center justify-center overflow-hidden"
+                        className="w-full h-44 rounded-xl border border-slate-700/80 p-4 shadow-md flex items-center justify-center overflow-hidden"
                         style={{
                           backgroundImage:
                             "linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%)",
-                          backgroundSize: "16px 16px",
-                          backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+                          backgroundSize: "14px 14px",
+                          backgroundPosition: "0 0, 0 7px, 7px -7px, -7px 0px",
                           backgroundColor: "#0f172a",
                         }}
-                        title="Pola papan catur untuk memverifikasi logo tidak memiliki kotak putih di belakangnya"
+                        title="Papan catur transparansi alpha"
                       >
                         <img
                           src={loginLogoUrl || "/ghighais-logo.jpg"}
-                          alt="Preview Alpha Transparency"
-                          className="w-full h-full object-contain drop-shadow-md rounded-lg"
+                          alt="Alpha test"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            objectFit: "contain",
+                            filter:
+                              logoShadowDepth === "none"
+                                ? "none"
+                                : "drop-shadow(0 6px 14px rgba(0,0,0,0.5))",
+                          }}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src = "/ghighais-logo.jpg";
                           }}
                         />
                       </div>
-                      <span className="text-[9px] text-emerald-400 font-medium">Bebas Kotak Putih</span>
+
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Bila menggunakan file PNG atau SVG berlatar bening, pola kotak-kotak papan catur akan tembus langsung di belakang logo tanpa ada kotak putih.
+                      </p>
                     </div>
-                  </div>
-                  <p className="text-[11px] text-slate-500 italic">
-                    Periksa pada kotak papan catur untuk memastikan gambar logo benar-benar transparan tanpa latar putih.
-                  </p>
+                  )}
                 </div>
 
-                {/* Upload & Settings Controls */}
-                <div className="lg:col-span-7 flex flex-col gap-4">
-                  {/* File Upload Input (Hidden actual input, styled drop/click area) */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Upload File Logo (Disarankan format .PNG tanpa background)
-                    </label>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png, image/webp, image/svg+xml, image/jpeg"
-                      onChange={handleLoginLogoFileUpload}
-                      className="hidden"
-                      id="input-file-login-logo"
-                    />
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-400/70 hover:bg-slate-900/60 bg-slate-950/60 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all group"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          fileInputRef.current?.click();
-                        }
-                      }}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-indigo-600/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                        <Upload className="w-4 h-4" />
+                {/* Controls & Size Sliders (Kanan: Detail Pengaturan Ukuran Bebas Berkreasi) */}
+                <div className="xl:col-span-7 flex flex-col gap-5">
+                  {/* PENGATUR 1: UKURAN LOGO HALAMAN LOGIN (BEBAS BERKREASI) */}
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-white flex items-center gap-2">
+                        <Maximize2 className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Ukuran Logo Halaman Login (Bebas Berkreasi)</span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={20}
+                          max={500}
+                          value={loginLogoSize}
+                          onChange={(e) => setLoginLogoSize(Math.max(20, Math.min(500, Number(e.target.value) || 96)))}
+                          className="w-16 px-2 py-1 text-center font-mono font-bold text-xs bg-slate-900 border border-slate-700 rounded-lg text-indigo-300 focus:outline-none focus:border-indigo-400"
+                        />
+                        <span className="text-[11px] text-slate-500 font-mono">px</span>
                       </div>
-                      <div className="text-center">
-                        <p className="text-xs font-bold text-slate-200 group-hover:text-indigo-300">
-                          Klik untuk pilih file PNG atau drag & drop di sini
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          Support PNG (transparan), SVG, WebP, JPG (Maks. 5MB)
-                        </p>
-                      </div>
+                    </div>
+
+                    {/* Slider Control Lebar Bebas: 20px - 400px */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-slate-500 font-mono">20px</span>
+                      <input
+                        type="range"
+                        min={20}
+                        max={400}
+                        step={2}
+                        value={loginLogoSize}
+                        onChange={(e) => setLoginLogoSize(Number(e.target.value))}
+                        className="flex-1 accent-indigo-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                      />
+                      <span className="text-[10px] text-slate-500 font-mono">400px</span>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      <span className="text-[10px] text-slate-400">Pilihan Cepat:</span>
+                      {[
+                        { label: "Mini (48px)", size: 48 },
+                        { label: "Kompak (80px)", size: 80 },
+                        { label: "Standar (110px)", size: 110 },
+                        { label: "Sedang (150px)", size: 150 },
+                        { label: "Besar (200px)", size: 200 },
+                        { label: "Ekstra (260px)", size: 260 },
+                        { label: "Jumbo (340px)", size: 340 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.size}
+                          type="button"
+                          onClick={() => setLoginLogoSize(preset.size)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer border ${
+                            loginLogoSize === preset.size
+                              ? "bg-indigo-600 text-white border-indigo-400 shadow-sm"
+                              : "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Or Direct URL Input */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Atau Masukkan URL Gambar Logo
-                    </label>
-                    <div className="flex gap-2">
+                  {/* PENGATUR 2: UKURAN LOGO NAVBAR / HEADER STUDIO */}
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-white flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Ukuran Logo Header / Navbar Studio</span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={16}
+                          max={150}
+                          value={navbarLogoSize}
+                          onChange={(e) => setNavbarLogoSize(Math.max(16, Math.min(150, Number(e.target.value) || 40)))}
+                          className="w-16 px-2 py-1 text-center font-mono font-bold text-xs bg-slate-900 border border-slate-700 rounded-lg text-amber-300 focus:outline-none focus:border-amber-400"
+                        />
+                        <span className="text-[11px] text-slate-500 font-mono">px</span>
+                      </div>
+                    </div>
+
+                    {/* Slider Control: 16px - 120px */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-slate-500 font-mono">16px</span>
+                      <input
+                        type="range"
+                        min={16}
+                        max={120}
+                        step={2}
+                        value={navbarLogoSize}
+                        onChange={(e) => setNavbarLogoSize(Number(e.target.value))}
+                        className="flex-1 accent-amber-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                      />
+                      <span className="text-[10px] text-slate-500 font-mono">120px</span>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      <span className="text-[10px] text-slate-400">Pilihan Cepat:</span>
+                      {[
+                        { label: "Mini (28px)", size: 28 },
+                        { label: "Standar (40px)", size: 40 },
+                        { label: "Sedang (52px)", size: 52 },
+                        { label: "Besar (68px)", size: 68 },
+                        { label: "Jumbo (84px)", size: 84 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.size}
+                          type="button"
+                          onClick={() => setNavbarLogoSize(preset.size)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer border ${
+                            navbarLogoSize === preset.size
+                              ? "bg-amber-600 text-slate-950 font-bold border-amber-400 shadow-sm"
+                              : "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* PENGATUR 3: EFEK BAYANGAN / KEDALAMAN LOGO (MURNI TANPA KOTAK) */}
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-300">
+                        Efek Kedalaman / Bayangan Logo (Murni Tanpa Batas Kotak)
+                      </label>
+                      <span className="text-[10px] text-emerald-400 font-semibold">Desain Borderless</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: "none", label: "Tanpa Bayangan" },
+                        { id: "soft", label: "Bayangan Halus" },
+                        { id: "medium", label: "Bayangan Tegas" },
+                        { id: "glow", label: "Efek Glow Cahaya" },
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setLogoShadowDepth(s.id as any)}
+                          className={`py-2 px-2 rounded-xl text-[10px] font-semibold transition-all cursor-pointer border text-center ${
+                            logoShadowDepth === s.id
+                              ? "bg-indigo-600/40 border-indigo-400 text-white shadow-sm"
+                              : "bg-slate-900 hover:bg-slate-850 border-slate-800 text-slate-400"
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Bayangan diterapkan langsung pada siluet bentuk gambar logo, tanpa bingkai persegi empat.
+                    </p>
+                  </div>
+
+                  {/* UPLOAD & SUMBER FILE GAMBAR */}
+                  <div className="space-y-3 pt-2 border-t border-slate-800">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                        Unggah File Logo Baru (Disimpan otomatis dalam format permanen Base64)
+                      </label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png, image/webp, image/svg+xml, image/jpeg"
+                        onChange={handleLoginLogoFileUpload}
+                        className="hidden"
+                        id="input-file-login-logo"
+                      />
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-400/70 hover:bg-slate-900/60 bg-slate-950/60 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all group"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            fileInputRef.current?.click();
+                          }
+                        }}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-indigo-600/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-bold text-slate-200 group-hover:text-indigo-300">
+                            Pilih file PNG transparan dari komputer atau seret kemari
+                          </p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            Mendukung PNG (transparan tanpa background), SVG, WebP, JPG
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Or Direct URL Input */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Atau Masukkan URL Gambar Logo
+                      </label>
                       <input
                         type="url"
                         value={loginLogoUrl}
@@ -441,30 +856,46 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                           setLoginLogoType("url");
                         }}
                         placeholder="https://example.com/logo-transparan.png"
-                        className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-400 text-xs text-white outline-none font-mono"
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-400 text-xs text-white outline-none font-mono"
                       />
                     </div>
+
+                    {/* Checkbox Global Sync */}
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/30 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={syncGlobal}
+                        onChange={(e) => setSyncGlobal(e.target.checked)}
+                        className="w-4 h-4 rounded accent-indigo-600 cursor-pointer"
+                      />
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-semibold text-indigo-200">
+                          Terapkan ke Seluruh Tampilan Aplikasi
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Logo & ukuran yang diatur akan serempak aktif di Halaman Login, Header Studio, dan Favicon browser.
+                        </span>
+                      </div>
+                    </label>
                   </div>
 
                   {/* Action Buttons & Confirmation Toast */}
-                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleResetLoginLogo}
-                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Kembalikan logo login ke logo default bawaan"
-                      >
-                        <RotateCcw className="w-3 h-3 text-slate-400" />
-                        <span>Reset ke Default</span>
-                      </button>
-                    </div>
+                  <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={handleResetLoginLogo}
+                      className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Kembalikan logo ke ukuran dan gambar default bawaan"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Reset ke Default</span>
+                    </button>
 
                     <div className="flex items-center gap-3">
                       {logoSaveToast && (
-                        <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-in fade-in duration-150">
+                        <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5 animate-in fade-in duration-150">
                           <Check className="w-4 h-4" />
-                          Logo login berhasil disimpan!
+                          Logo dan ukuran berhasil disimpan ke server!
                         </span>
                       )}
 
@@ -472,10 +903,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                         id="btn-admin-save-login-logo"
                         type="button"
                         onClick={handleSaveLoginLogo}
-                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-2 active:scale-95"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Simpan Logo Login</span>
+                        <Check className="w-4 h-4" />
+                        <span>Simpan Logo & Ukuran Tampilan</span>
                       </button>
                     </div>
                   </div>

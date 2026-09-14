@@ -74,6 +74,73 @@ function AppContent() {
     return DEFAULT_APP_CONFIG;
   });
 
+  // Unified Persistent Config Saver (Syncs to localStorage, state, and server database)
+  const handleSaveAppConfig = async (newConfig: AppConfig) => {
+    setConfig(newConfig);
+    try {
+      localStorage.setItem("ghighais_app_config", JSON.stringify(newConfig));
+    } catch (e) {
+      console.warn("Storage write error:", e);
+    }
+    if (newConfig.permanentFooterText) {
+      setCode((prev) => ensurePermanentFooter(prev, newConfig.permanentFooterText));
+    }
+    // Server-side persistent storage across all visitors/devices
+    try {
+      await fetch("/api/app-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: newConfig }),
+      });
+    } catch (err) {
+      console.warn("Server config save error:", err);
+    }
+  };
+
+  // Fetch persistent configuration from server to guarantee logo & sizes appear on any device/browser
+  useEffect(() => {
+    fetch("/api/app-config")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("Failed to fetch app config");
+      })
+      .then((data) => {
+        if (data && data.config) {
+          setConfig((prev) => {
+            const merged = {
+              ...DEFAULT_APP_CONFIG,
+              ...prev,
+              ...data.config,
+              customTexts: {
+                ...DEFAULT_APP_CONFIG.customTexts,
+                ...(prev.customTexts || {}),
+                ...(data.config.customTexts || {}),
+              },
+            };
+            try {
+              localStorage.setItem("ghighais_app_config", JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
+        }
+      })
+      .catch((err) => {
+        console.info("Using cached local configuration:", err.message);
+      });
+  }, []);
+
+  // Update browser tab favicon dynamically if logo is configured
+  useEffect(() => {
+    const iconUrl = config.logoUrl || config.loginLogoUrl || "/ghighais-logo.jpg";
+    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.getElementsByTagName("head")[0].appendChild(link);
+    }
+    link.href = iconUrl;
+  }, [config.logoUrl, config.loginLogoUrl]);
+
   // 2. Active Web Code (selalu terlindungi dengan permanent footer)
   const [code, setCode] = useState<string>(() => {
     try {
@@ -834,12 +901,7 @@ function AppContent() {
       return (
         <AdminDashboardPage
           config={config}
-          onSaveConfig={(newConfig) => {
-            setConfig(newConfig);
-            if (newConfig.permanentFooterText) {
-              setCode((prev) => ensurePermanentFooter(prev, newConfig.permanentFooterText));
-            }
-          }}
+          onSaveConfig={handleSaveAppConfig}
           onEnterStudio={() => navigate("/dashboard")}
         />
       );
@@ -1168,12 +1230,7 @@ function AppContent() {
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
         config={config}
-        onSaveConfig={(newConfig) => {
-          setConfig(newConfig);
-          if (newConfig.permanentFooterText) {
-            setCode((prev) => ensurePermanentFooter(prev, newConfig.permanentFooterText));
-          }
-        }}
+        onSaveConfig={handleSaveAppConfig}
       />
 
       {/* GitHub Push Export & URL Generator Modal */}

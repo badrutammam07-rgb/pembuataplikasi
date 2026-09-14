@@ -89,12 +89,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     setAdminError(null);
 
     try {
-      const res = await loginAdmin(adminPassword.trim());
+      const res = await loginAdmin(adminPassword.trim(), "/admin");
       if (res.success) {
         setShowAdminPasswordModal(false);
         setAdminPassword("");
-        // Buka panel konfigurasi admin
-        onOpenAdmin();
+        navigate("/admin");
       } else {
         setAdminError(res.error || "Password salah. Silakan coba lagi.");
       }
@@ -133,39 +132,58 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     const transformStyle = `translate(${config.logoOffsetX || 0}px, ${config.logoOffsetY || 0}px) scale(${config.logoScale || 1}) rotate(${config.logoRotate || 0}deg)`;
 
-    if (config.logoType === "url" && config.logoUrl) {
+    const effectiveLogoSrc = config.logoUrl || config.loginLogoUrl || "/ghighais-logo.jpg";
+
+    if (config.logoType === "url" || config.logoType === "upload" || (!config.logoPreset && effectiveLogoSrc)) {
       return (
         <img
-          src={config.logoUrl}
+          src={effectiveLogoSrc}
           alt="App Logo"
-          className={`w-full h-full ${objectFitClass} rounded-xl`}
+          className="w-full h-full object-contain drop-shadow-md select-none"
           style={{ transform: transformStyle }}
-        />
-      );
-    }
-    if (config.logoType === "upload" && config.logoUrl) {
-      return (
-        <img
-          src={config.logoUrl}
-          alt="Uploaded Logo"
-          className={`w-full h-full ${objectFitClass} rounded-xl`}
-          style={{ transform: transformStyle }}
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
+          onError={(e) => {
+            const img = e.currentTarget as HTMLImageElement;
+            if (!img.src.endsWith("/ghighais-logo.jpg")) {
+              img.src = "/ghighais-logo.jpg";
+            }
+          }}
         />
       );
     }
 
-    // Default or selected preset
-    const preset =
-      LOGO_PRESETS.find((p) => p.id === config.logoPreset) || LOGO_PRESETS[0];
+    if (config.logoType === "preset") {
+      const preset =
+        LOGO_PRESETS.find((p) => p.id === config.logoPreset) || LOGO_PRESETS[0];
+
+      return (
+        <div
+          className="w-full h-full flex items-center justify-center p-0.5 transition-transform duration-200 drop-shadow-md"
+          style={{ transform: transformStyle }}
+          dangerouslySetInnerHTML={{ __html: preset.svg }}
+        />
+      );
+    }
 
     return (
-      <div
-        className="w-full h-full flex items-center justify-center p-1 transition-transform duration-200"
-        style={{ transform: transformStyle }}
-        dangerouslySetInnerHTML={{ __html: preset.svg }}
+      <img
+        src={effectiveLogoSrc}
+        alt="App Logo"
+        className="w-full h-full object-contain drop-shadow-md select-none"
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+        onError={(e) => {
+          const img = e.currentTarget as HTMLImageElement;
+          if (!img.src.endsWith("/ghighais-logo.jpg")) {
+            img.src = "/ghighais-logo.jpg";
+          }
+        }}
       />
     );
   };
+
+  const navbarLogoSize = config.navbarLogoSize || 40;
 
   return (
     <header
@@ -178,7 +196,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div
             id="ghighais-interactive-logo"
             onClick={handleLogoTap}
-            className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-900/80 via-slate-800 to-indigo-700/60 border border-indigo-500/40 flex items-center justify-center cursor-pointer select-none transition-all duration-200 hover:scale-105 active:scale-95 shadow-md shadow-indigo-950/50 hover:border-indigo-400 group relative overflow-hidden shrink-0"
+            style={{
+              width: `${navbarLogoSize}px`,
+              height: `${navbarLogoSize}px`,
+            }}
+            className="flex items-center justify-center cursor-pointer select-none transition-all duration-200 hover:scale-105 active:scale-95 group relative shrink-0"
+            title="Logo Aplikasi (Ketuk 5x untuk Masuk Mode Admin)"
           >
             {renderLogoGraphic()}
           </div>

@@ -128,10 +128,14 @@ export const LOGO_PRESETS = [
 ];
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
-  logoUrl: "",
-  logoType: "preset",
+  logoUrl: "/ghighais-logo.jpg",
+  logoType: "upload",
   logoPreset: "brain_neon",
   logoScale: 1,
+  logoSize: 96,
+  loginLogoSize: 96,
+  navbarLogoSize: 40,
+  logoBorderRadius: "3xl",
   logoFit: "contain",
   logoOffsetX: 0,
   logoOffsetY: 0,

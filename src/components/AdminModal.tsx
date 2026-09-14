@@ -994,6 +994,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                 ...prev,
                                 loginLogoUrl: "/ghighais-logo.jpg",
                                 loginLogoType: "default",
+                                loginLogoSize: 96,
+                                navbarLogoSize: 40,
                               }))
                             }
                             className="text-[10px] text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
@@ -1002,6 +1004,59 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           </button>
                         </div>
                       )}
+
+                      {/* Size Controls */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                        <div>
+                          <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                            <span>Ukuran Logo Login (Bebas Berkreasi)</span>
+                            <span className="text-indigo-400 font-mono">{formData.loginLogoSize || 96}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={20}
+                            max={400}
+                            step={2}
+                            value={formData.loginLogoSize || 96}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                loginLogoSize: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                          />
+                          <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-0.5">
+                            <span>20px</span>
+                            <span>400px</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                            <span>Ukuran Logo Navbar</span>
+                            <span className="text-amber-400 font-mono">{formData.navbarLogoSize || 40}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={16}
+                            max={120}
+                            step={2}
+                            value={formData.navbarLogoSize || 40}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                navbarLogoSize: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                          />
+                          <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-0.5">
+                            <span>16px</span>
+                            <span>120px</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

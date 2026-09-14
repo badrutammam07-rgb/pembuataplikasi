@@ -3,6 +3,10 @@ export interface AppConfig {
   logoType: "preset" | "url" | "upload";
   logoPreset: string;
   logoScale: number;
+  logoSize?: number;
+  loginLogoSize?: number;
+  navbarLogoSize?: number;
+  logoBorderRadius?: "none" | "md" | "xl" | "3xl" | "full";
   logoFit?: "contain" | "cover" | "fill" | "none";
   logoOffsetX?: number;
   logoOffsetY?: number;
